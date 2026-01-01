@@ -172,12 +172,54 @@ The application runs automatically according to the schedule defined in the conf
 
 ## Development
 
-### Running Tests
+### Manual Testing
 
-Since this is a scraping application, testing involves:
-1. Manual verification of scraped data
-2. Checking Google Calendar for created events
-3. Verifying Redis state persistence
+The application includes manual test scripts to verify functionality before deployment:
+
+1. **Scraper Test** (recommended first test):
+   ```bash
+   python test_scraper_only.py
+   ```
+   This tests just the web scraping functionality to ensure it can extract data from the busker profile page.
+
+2. **Full Manual Test**:
+   ```bash
+   python test_manual.py
+   ```
+   This runs comprehensive tests on all components including:
+   - Configuration validation
+   - Redis connection
+   - Web scraping
+   - Google Calendar connection
+   - Redis event storage
+   - Scheduler components
+
+3. **Individual Component Tests**:
+   ```bash
+   python test_manual.py config      # Test configuration
+   python test_manual.py redis       # Test Redis connection
+   python test_manual.py scraper     # Test web scraping
+   python test_manual.py calendar    # Test Google Calendar
+   python test_manual.py redis_store # Test Redis storage
+   python test_manual.py scheduler   # Test scheduler
+   ```
+
+### Prerequisites for Testing
+
+Before running the tests, ensure you have:
+1. Set up your `.env` file with the required values
+2. Installed the dependencies: `pip install -r requirements.txt`
+3. Installed Playwright browsers: `playwright install chromium`
+4. Set up Google Calendar API with service account
+5. Started a Redis server
+
+### Interpreting Test Results
+
+- Green checkmarks (✓) indicate successful tests
+- Red X marks (✗) indicate failed tests
+- Pay attention to error messages for troubleshooting
+
+The scraper test is the best place to start as it validates the core functionality without requiring all services to be configured.
 
 ### Local Testing
 
