@@ -5,8 +5,8 @@ A Python application that scrapes busker schedules daily at 11 PM GMT+8 and auto
 ## Overview
 
 This application:
-- Scrapes busker performance schedules from: https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4
-- Creates events in Google Calendar (ID: fec731e846c5f2bf53f17ade0152aa8fe1197c79fcbcc470460b6fc2f8106701@group.calendar.google.com)
+- Scrapes busker performance schedules from the configured URL
+- Creates events in the configured Google Calendar
 - Runs daily at 11 PM Singapore time (GMT+8)
 - Uses Redis to prevent duplicate events and maintain state across container restarts
 - Deploys on Zeabur via GitHub
@@ -47,6 +47,11 @@ This application:
    cd busker-scheduler
    ```
 
+2. Obtain your busker profile URL:
+   - Navigate to the busker profile page you want to scrape
+   - Copy the URL from your browser
+   - This will be your BUSKER_URL value
+
 2. Create a virtual environment:
    ```bash
    python -m venv venv
@@ -85,15 +90,16 @@ This application:
 3. Create Service Account with Calendar scope
 4. Download JSON key file
 5. Share target calendar with service account email (Make changes to events permission)
-6. Upload JSON to deployment securely
+6. Get your Google Calendar ID (found in calendar settings)
+7. Upload JSON to deployment securely
 
 ## Configuration
 
 The application uses environment variables for configuration. Copy `.env.example` to `.env` and customize the values:
 
 ```bash
-BUSKER_URL=https://eservices.nac.gov.sg/Busking/busker/profile/dbc5b6bc-e22a-4e60-9fe4-f4d6a1aa17a4
-CALENDAR_ID=fec731e846c5f2bf53f17ade0152aa8fe1197c79fcbcc470460b6fc2f8106701@group.calendar.google.com
+BUSKER_URL=<YOUR_BUSKER_PROFILE_URL>
+CALENDAR_ID=<YOUR_GOOGLE_CALENDAR_ID>
 GOOGLE_CREDENTIALS_PATH=./credentials/service-account.json
 REDIS_HOST=localhost
 REDIS_PORT=6379
@@ -102,6 +108,8 @@ TIMEZONE=Asia/Singapore
 LOG_LEVEL=INFO
 EVENT_TTL_DAYS=90
 ```
+
+**Important**: The BUSKER_URL and CALENDAR_ID should be treated as sensitive information and kept private. Do not share these values publicly or commit them to version control.
 
 ## Deployment on Zeabur
 
@@ -193,7 +201,9 @@ The application logs to console with configurable log level. Check logs for erro
 ## Security Considerations
 
 - Never commit service account JSON to Git (excluded by .gitignore)
-- Use environment variables for sensitive configuration
+- Never commit BUSKER_URL or CALENDAR_ID to Git (excluded by .gitignore)
+- Use environment variables for all sensitive configuration
+- Treat BUSKER_URL and CALENDAR_ID as private API keys
 - Implement proper access controls for the deployed application
 
 ## Contributing
