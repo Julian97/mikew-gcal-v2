@@ -172,8 +172,16 @@ class BuskerScraper:
                 if date_elem:
                     date = self._parse_date(str(date_elem.text).strip())
                 else:
-                    # Could not find date, skip this item
-                    return None
+                    # Try to find date by looking for elements with date-like content
+                    # Look for elements with date pattern
+                    for tag in item.find_all(['span', 'div', 'p', 'li', 'td']):
+                        text_content = tag.get_text().strip()
+                        if re.search(r'\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4}|(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec).*\d{1,2}.*\d{4}', text_content, re.IGNORECASE):
+                            date = self._parse_date(text_content)
+                            break
+                    else:
+                        # Could not find date, skip this item
+                        return None
             
             # Look for time - common patterns
             time_elements = item.find_all(text=re.compile(r'\d{1,2}:\d{2}\s*(AM|PM|am|pm)?')) or \
@@ -184,37 +192,58 @@ class BuskerScraper:
                 start_time, end_time = self._parse_time_range(time_text)
             else:
                 # Try to find time in child elements
-                time_elem = item.find(['span', 'div', 'p'], text=re.compile(r'\d{1,2}:\d{2}\s*(AM|PM|am|pm)?|\d{1,2}\.\d{2}'))
+                time_elem = item.find(['span', 'div', 'p', 'li', 'td'], text=re.compile(r'\d{1,2}:\d{2}\s*(AM|PM|am|pm)?|\d{1,2}\.\d{2}'))
                 if time_elem:
                     start_time, end_time = self._parse_time_range(str(time_elem.text).strip())
                 else:
-                    # Could not find time, skip this item
-                    return None
+                    # Try to find time by looking for elements with time-like content
+                    for tag in item.find_all(['span', 'div', 'p', 'li', 'td']):
+                        text_content = tag.get_text().strip()
+                        if re.search(r'\d{1,2}:\d{2}\s*(AM|PM|am|pm)?|\d{1,2}\.\d{2}', text_content, re.IGNORECASE):
+                            start_time, end_time = self._parse_time_range(text_content)
+                            break
+                    else:
+                        # Could not find time, skip this item
+                        return None
             
-            # Look for location
-            location_elements = item.find_all(['span', 'div', 'p'], text=re.compile(r'location|venue|@|at', re.IGNORECASE))
-            if not location_elements:
-                # Look for common location patterns
-                location_elem = item.find(['span', 'div', 'p'], text=re.compile(r'[A-Z][a-z]+.*[A-Z][a-z]+|.*Singapore|.*St\.?|.*Ave\.?|.*Rd\.?', re.IGNORECASE))
-                if location_elem:
-                    location = str(location_elem.text).strip()
-                else:
-                    location = "Unknown Location"
-            else:
+            # Look for location - try multiple approaches
+            location = "Unknown Location"
+            
+            # First, look for location-related text
+            location_elements = item.find_all(['span', 'div', 'p', 'li', 'td'], text=re.compile(r'location|venue|@|at|\bat\b|\bpark\b|\btheatre\b|\bstreet\b|\bplaza\b', re.IGNORECASE))
+            if location_elements:
                 location = str(location_elements[0]).strip()
+            else:
+                # Look for elements that might contain location information
+                for tag in item.find_all(['span', 'div', 'p', 'li', 'td']):
+                    text_content = tag.get_text().strip()
+                    # Look for text that might be a location (contains capital words, Singapore, or address-like patterns)
+                    if re.search(r'[A-Z][a-z]+.*[A-Z][a-z]+|.*Singapore|.*St\.?|.*Ave\.?|.*Rd\.?|.*Lane|.*Circle|.*Plaza|.*Park|.*Theatre|.*Center|.*Centre', text_content, re.IGNORECASE):
+                        location = text_content
+                        break
             
             # Clean up location text
-            location = re.sub(r'location[:\s]*|venue[:\s]*', '', location, flags=re.IGNORECASE).strip()
+            location = re.sub(r'location[:\s]*|venue[:\s]*|@|at[:\s]*', '', location, flags=re.IGNORECASE).strip()
             
             # Look for busker name
-            name_elem = item.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div', 'p'], 
-                                 text=re.compile(r'busker|performer|artist', re.IGNORECASE))
-            if not name_elem:
-                # Try to find any text that might be a name
-                name_elem = item.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div', 'p'])
+            busker_name = "Unknown Busker"
             
-            busker_name = str(name_elem.text).strip() if name_elem else "Unknown Busker"
-            busker_name = re.sub(r'busker|performer|artist', '', busker_name, flags=re.IGNORECASE).strip()
+            # Look for text that might be a name
+            name_elem = item.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div', 'p', 'strong', 'b'], 
+                                 text=re.compile(r'busker|performer|artist|musician|band|singer|guitarist|violinist', re.IGNORECASE))
+            if name_elem:
+                busker_name = str(name_elem.text).strip()
+                # Remove performer-related terms
+                busker_name = re.sub(r'busker|performer|artist|musician|band|singer|guitarist|violinist', '', busker_name, flags=re.IGNORECASE).strip()
+            else:
+                # Try to find the first significant text content as the name
+                all_text = item.get_text().strip()
+                lines = all_text.split('\n')
+                for line in lines:
+                    line = line.strip()
+                    if line and len(line) > 2 and not re.match(r'\d.*\d|.*\d{4}.*|.*\d{1,2}:\d{2}.*', line):  # Skip if it looks like a date or time
+                        busker_name = line
+                        break
             
             # Create event object
             event = {
@@ -227,7 +256,12 @@ class BuskerScraper:
                 'scraped_at': datetime.now().isoformat()
             }
             
-            return event
+            # Validate that we have essential fields
+            if event['date'] and event['start_time'] and event['location']:
+                return event
+            else:
+                self.logger.debug(f"Incomplete event data: {event}")
+                return None
             
         except Exception as e:
             self.logger.warning(f"Error extracting event from item: {e}")
