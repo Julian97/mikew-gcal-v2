@@ -20,14 +20,26 @@ def test_config():
     """Test configuration loading."""
     print("Testing Configuration...")
     try:
-        Config.validate()
-        print("✓ Configuration validation passed")
-        print(f"  - Busker URL: {'SET' if Config.BUSKER_URL else 'NOT SET'}")
-        print(f"  - Calendar ID: {'SET' if Config.CALENDAR_ID else 'NOT SET'}")
-        print(f"  - Redis Host: {Config.REDIS_HOST}")
-        print(f"  - Timezone: {Config.TIMEZONE}")
-        return True
-    except ValueError as e:
+        # Check if required config values are set
+        issues = []
+        if not Config.BUSKER_URL:
+            issues.append("BUSKER_URL is not set")
+        if not Config.CALENDAR_ID:
+            issues.append("CALENDAR_ID is not set")
+        if not os.path.exists(Config.GOOGLE_CREDENTIALS_PATH):
+            issues.append(f"Google credentials file not found at {Config.GOOGLE_CREDENTIALS_PATH}")
+        
+        if issues:
+            print(f"✗ Configuration issues found: {'; '.join(issues)}")
+            return False
+        else:
+            print("✓ Configuration validation passed")
+            print(f"  - Busker URL: {'SET' if Config.BUSKER_URL else 'NOT SET'}")
+            print(f"  - Calendar ID: {'SET' if Config.CALENDAR_ID else 'NOT SET'}")
+            print(f"  - Redis Host: {Config.REDIS_HOST}")
+            print(f"  - Timezone: {Config.TIMEZONE}")
+            return True
+    except Exception as e:
         print(f"✗ Configuration validation failed: {e}")
         return False
 

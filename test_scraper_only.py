@@ -20,14 +20,13 @@ def main():
     print("Busker Scraper Test")
     print("="*50)
     
-    # Validate configuration
-    try:
-        Config.validate()
-        logger.info("Configuration validated successfully")
-    except ValueError as e:
-        logger.error(f"Configuration error: {e}")
-        print(f"❌ Configuration error: {e}")
+    # Check if required configuration is set
+    if not Config.BUSKER_URL:
+        print("❌ BUSKER_URL is not set in environment variables")
+        print("Please set BUSKER_URL in your .env file")
         return False
+    
+    logger.info("Configuration check passed")
     
     # Check if BUSKER_URL is set
     if not Config.BUSKER_URL:
