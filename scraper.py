@@ -92,23 +92,65 @@ class BuskerScraper:
         """Parse the schedule from the BeautifulSoup object."""
         events = []
         
-        # Look for schedule items - these selectors are based on common patterns
-        # The actual selectors might need to be adjusted based on the real page structure
-        schedule_items = soup.find_all('div', {'data-testid': 'schedule-item'}) or \
-                        soup.find_all('div', class_=re.compile(r'.*schedule.*', re.IGNORECASE)) or \
-                        soup.find_all('div', class_=re.compile(r'.*event.*', re.IGNORECASE))
+        # Look for elements that might contain event information
+        # Try various selectors that might match the actual page structure
+        possible_selectors = [
+            '[class*="event"]',
+            '[class*="schedule"]',
+            '[class*="booking"]',
+            '[class*="calendar"]',
+            '[class*="performance"]',
+            '.event',
+            '.schedule',
+            '.booking',
+            '.calendar',
+            '.performance'
+        ]
         
-        if not schedule_items:
-            # Try more general selectors
-            schedule_items = soup.find_all('div', class_=re.compile(r'.*row.*|.*item.*|.*card.*', re.IGNORECASE))
+        schedule_items = []
         
+        # Try to find elements using different selectors
+        for selector in possible_selectors:
+            if selector.startswith('.'):
+                # Handle class selectors
+                class_name = selector[1:]
+                items = soup.find_all(class_=re.compile(f'.*{class_name}.*', re.IGNORECASE))
+                schedule_items.extend(items)
+            elif selector.startswith('['):
+                # Handle attribute selectors
+                if 'class*=' in selector:
+                    search_term = selector.split('class*=')[1].strip('"\'\'')
+                    items = soup.find_all(class_=re.compile(f'.*{search_term}.*', re.IGNORECASE))
+                    schedule_items.extend(items)
+                elif 'data-testid' in selector:
+                    attr_parts = selector[1:-1].split('=')
+                    if len(attr_parts) == 2:
+                        attr_name = attr_parts[0]
+                        attr_value = attr_parts[1].strip('"\'\'')
+                        items = soup.find_all(attrs={attr_name: attr_value})
+                        schedule_items.extend(items)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_items = []
         for item in schedule_items:
-            event = self._extract_event_from_item(item)
-            if event:
-                events.append(event)
+            if item not in seen:
+                seen.add(item)
+                unique_items.append(item)
         
-        # If we couldn't find events with data-testid, try parsing by text content
+        schedule_items = unique_items
+        
+        if schedule_items:
+            self.logger.info(f"Found {len(schedule_items)} potential schedule items")
+            
+            for item in schedule_items:
+                event = self._extract_event_from_item(item)
+                if event:
+                    events.append(event)
+        
+        # If no events found from structured elements, try text-based parsing as a fallback
         if not events:
+            self.logger.info("No events extracted from structured elements, using text-based extraction")
             events = self._parse_by_text_content(soup)
         
         return events
