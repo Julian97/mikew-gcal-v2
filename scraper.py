@@ -32,7 +32,32 @@ class BuskerScraper:
                     self.logger.info("Page loaded successfully")
                     
                     # Wait for the schedule elements to load
-                    page.wait_for_selector('[data-testid="schedule-item"]', timeout=self.timeout)
+                    # Try multiple possible selectors for schedule items
+                    schedule_selectors = [
+                        '[data-testid="schedule-item"]',
+                        '.schedule-item',
+                        '.event-item',
+                        '.schedule',
+                        '.event',
+                        '.calendar-event',
+                        '.booking',
+                        '[class*="schedule"]',
+                        '[class*="event"]',
+                        '[class*="booking"]'
+                    ]
+                    
+                    element_found = False
+                    for selector in schedule_selectors:
+                        try:
+                            page.wait_for_selector(selector, timeout=5000)  # Shorter timeout per selector
+                            self.logger.info(f"Found schedule elements with selector: {selector}")
+                            element_found = True
+                            break
+                        except PlaywrightTimeoutError:
+                            continue
+                    
+                    if not element_found:
+                        self.logger.warning("No schedule elements found with expected selectors, continuing with available content")
                     
                     # Get the page content after JavaScript execution
                     content = page.content()
