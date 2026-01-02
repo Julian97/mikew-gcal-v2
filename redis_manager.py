@@ -29,11 +29,15 @@ class RedisManager:
             self.logger.error(f"Redis connection failed: {e}")
             return False
     
-    def store_event(self, event_data: Dict[str, Any]) -> bool:
-        """Store an event in Redis with TTL."""
+    def store_event(self, event_data: Dict[str, Any], calendar_event_id: str = None) -> bool:
+        """Store an event in Redis with TTL, optionally including calendar event ID."""
         try:
             event_hash = generate_event_hash(event_data)
             event_key = f"event:{event_hash}"
+            
+            # Add calendar event ID to the event data if provided
+            if calendar_event_id:
+                event_data['calendar_event_id'] = calendar_event_id
             
             # Store event data as a JSON string
             event_json = json.dumps(event_data)
@@ -252,3 +256,36 @@ class RedisManager:
         except Exception as e:
             self.logger.error(f"Error cleaning up old events: {e}")
             return 0
+    
+    def get_recent_metrics(self) -> Dict[str, Any]:
+        """Get recent metrics from Redis."""
+        try:
+            from .utils import get_current_singapore_time
+            current_date = get_current_singapore_time().strftime("%Y-%m-%d")
+            
+            metrics = self.get_metrics(current_date)
+            
+            # Also get total event count
+            event_count = self.redis_client.zcard("events_timeline")
+            
+            # Get lock status
+            lock_exists = self.redis_client.exists("scraper:lock") == 1
+            
+            return {
+                "date": current_date,
+                "metrics": metrics,
+                "total_events": event_count,
+                "lock_exists": lock_exists
+            }
+        except Exception as e:
+            self.logger.error(f"Error getting recent metrics: {e}")
+            return {}
+    
+    def get_last_scrape_info(self) -> Dict[str, Any]:
+        """Get the last scrape information from Redis."""
+        try:
+            last_run = self.get_last_run_metadata()
+            return last_run if last_run else {}
+        except Exception as e:
+            self.logger.error(f"Error getting last scrape info: {e}")
+            return {}

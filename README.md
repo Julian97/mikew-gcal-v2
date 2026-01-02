@@ -172,6 +172,26 @@ The application runs automatically according to the schedule defined in the conf
 - Scraping job runs daily at 11 PM Singapore time
 - Sync job runs daily at 3 AM Singapore time
 
+### API Endpoints
+
+The application also exposes the following API endpoints for monitoring and manual operations:
+
+- `GET /health` - Health check to verify all services are working
+- `GET /status` - Get detailed status of the application
+- `POST /scrape` - Manually trigger the scraper to run immediately
+
+Example usage:
+```bash
+# Check health
+curl -X GET http://localhost:8080/health
+
+# Get status
+curl -X GET http://localhost:8080/status
+
+# Manually trigger scraping
+curl -X POST http://localhost:8080/scrape
+```
+
 ## Development
 
 ### Manual Testing

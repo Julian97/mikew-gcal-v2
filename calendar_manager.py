@@ -260,3 +260,26 @@ class CalendarManager:
         except Exception as e:
             self.logger.error(f"Error checking if event exists in calendar: {e}")
             return None
+    
+    def test_connection(self) -> bool:
+        """Test Google Calendar connection by attempting to list events."""
+        try:
+            # Try to list events to test the connection
+            # Limit to a small range to avoid too much data
+            from utils import get_current_singapore_time
+            from datetime import timedelta
+            
+            now = get_current_singapore_time()
+            time_min = (now - timedelta(days=1)).isoformat()  # Look back 1 day
+            time_max = (now + timedelta(days=1)).isoformat()  # Look ahead 1 day
+            
+            # Attempt to list events
+            events = self.list_events(time_min=time_min, time_max=time_max)
+            
+            # If we get here without exception, connection is working
+            self.logger.info("Google Calendar connection test successful")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Google Calendar connection test failed: {e}")
+            return False

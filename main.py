@@ -1,9 +1,23 @@
 import sys
 import signal
+import threading
+import time
+import os
 from config import Config
 from utils import setup_logging, get_logger
 from scheduler import Scheduler
 from redis_manager import RedisManager
+
+def run_api():
+    """Run the Flask API in a separate thread."""
+    try:
+        from api import app
+        # Run Flask with production-ready settings
+        port = int(os.environ.get('PORT', 8080))
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
+    except Exception as e:
+        logger.error(f"Error starting API server: {e}")
+
 
 def main():
     """Main entry point for the busker scheduler application."""
@@ -30,6 +44,11 @@ def main():
     
     # Initialize and start scheduler
     scheduler = Scheduler()
+    
+    # Start API server in a separate thread
+    api_thread = threading.Thread(target=run_api, daemon=True)
+    api_thread.start()
+    logger.info("API server started on port 8080")
     
     logger.info("Busker Scheduler Application started successfully")
     logger.info(f"Scheduler will run daily at {Config.SCRAPE_TIME_HOUR}:00 Singapore time")
