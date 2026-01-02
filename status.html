@@ -151,6 +151,17 @@
         <p>Check your Zeabur dashboard for detailed application logs.</p>
     </div>
 
+    <div class="card">
+        <h2>Manual Data Copy</h2>
+        <button class="button" onclick="getScrapeData()">Get Raw Scrape Data</button>
+        <div id="scrape-data" class="api-response" style="display:none;">
+            <h3>Scraped Events Data (for manual copying):</h3>
+            <textarea id="scrape-textarea" style="width:100%; height:200px; font-family:monospace;" readonly></textarea>
+            <br><br>
+            <button class="button" onclick="copyScrapeData()">Copy to Clipboard</button>
+        </div>
+    </div>
+
     <script>
         const API_BASE_URL = ''; // Use relative URLs since HTML is served from the same application
 
@@ -247,6 +258,59 @@
             button.textContent = 'Manually Trigger Scrape';
         }
 
+        async function getScrapeData() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Loading...';
+            
+            const result = await apiCall('/scrape', 'POST');
+            
+            const scrapeDataDiv = document.getElementById('scrape-data');
+            scrapeDataDiv.style.display = 'block';
+            
+            if (result.success) {
+                // Format the scraped data for display
+                const scrapedEvents = result.data;
+                const formattedData = JSON.stringify(scrapedEvents, null, 2);
+                
+                document.getElementById('scrape-textarea').value = formattedData;
+                
+                // Update the scrape result display as well
+                const scrapeResult = document.getElementById('scrape-result');
+                if (scrapeResult) {
+                    scrapeResult.style.display = 'block';
+                    scrapeResult.className = 'api-response status-success';
+                    scrapeResult.textContent = formattedData;
+                }
+            } else {
+                const errorText = `Error: ${result.error || 'Unknown error'}`;
+                document.getElementById('scrape-textarea').value = errorText;
+                
+                const scrapeResult = document.getElementById('scrape-result');
+                if (scrapeResult) {
+                    scrapeResult.style.display = 'block';
+                    scrapeResult.className = 'api-response status-error';
+                    scrapeResult.textContent = errorText;
+                }
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Get Raw Scrape Data';
+        }
+        
+        function copyScrapeData() {
+            const textarea = document.getElementById('scrape-textarea');
+            textarea.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            const originalText = event.target.textContent;
+            event.target.textContent = 'Copied!';
+            setTimeout(() => {
+                event.target.textContent = originalText;
+            }, 2000);
+        }
+        
         // Load initial health status on page load
         window.onload = async function() {
             // Try to get initial status
