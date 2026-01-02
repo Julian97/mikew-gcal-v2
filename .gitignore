@@ -51,3 +51,6 @@ logs/
 
 # Docker
 .dockerenv
+
+# Debug files
+debug/
