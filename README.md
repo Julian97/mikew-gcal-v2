@@ -180,6 +180,7 @@ The application runs automatically according to the schedule defined in the conf
 
 The application also exposes the following API endpoints for monitoring and manual operations:
 
+- `GET /` - Status dashboard web page with UI controls
 - `GET /health` - Health check to verify all services are working
 - `GET /status` - Get detailed status of the application
 - `POST /scrape` - Manually trigger the scraper to run immediately

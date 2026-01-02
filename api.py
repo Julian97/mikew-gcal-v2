@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template_string
 from datetime import datetime
 import logging
 import os
@@ -142,6 +142,20 @@ def manual_scrape():
             'message': f'Manual scrape failed: {str(e)}',
             'timestamp': datetime.now().isoformat()
         }), 500
+
+@app.route('/', methods=['GET'])
+def index():
+    """Serve the status dashboard page."""
+    try:
+        # Read the status.html file content
+        with open('status.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return render_template_string(html_content)
+    except FileNotFoundError:
+        return jsonify({'error': 'Status page not found'}), 404
+    except Exception as e:
+        logger.error(f"Error serving status page: {e}")
+        return jsonify({'error': 'Error loading status page'}), 500
 
 @app.route('/status', methods=['GET'])
 def status_check():

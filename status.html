@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Busker Scheduler Status Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        .button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .button-scrape {
+            background-color: #2196F3;
+        }
+        .button-scrape:hover {
+            background-color: #1976D2;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .api-response {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Busker Scheduler Status Dashboard</h1>
+        <p>Monitor and control your busker schedule scraper</p>
+    </div>
+
+    <div class="grid">
+        <div class="metric-card">
+            <div class="metric-value" id="status-indicator">...</div>
+            <div class="metric-label">Overall Status</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="redis-status">...</div>
+            <div class="metric-label">Redis Status</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="calendar-status">...</div>
+            <div class="metric-label">Calendar Status</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Health Check</h2>
+        <button class="button" onclick="checkHealth()">Check Health</button>
+        <div id="health-result" class="api-response" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h2>Status Information</h2>
+        <button class="button" onclick="checkStatus()">Get Status</button>
+        <div id="status-result" class="api-response" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h2>Manual Operations</h2>
+        <button class="button button-scrape" onclick="triggerScrape()">Manually Trigger Scrape</button>
+        <div id="scrape-result" class="api-response" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+        <h2>Application Logs (Recent)</h2>
+        <p>Check your Zeabur dashboard for detailed application logs.</p>
+    </div>
+
+    <script>
+        const API_BASE_URL = ''; // Use relative URLs since HTML is served from the same application
+
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method !== 'GET') {
+                    options.body = JSON.stringify(data);
+                }
+                
+                // Use relative URL - no need for API_BASE_URL since HTML is served from same app
+                const response = await fetch(endpoint, options);
+                const result = await response.json();
+                return { success: response.ok, data: result, status: response.status };
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function checkHealth() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Checking...';
+            
+            const result = await apiCall('/health');
+            
+            const healthResult = document.getElementById('health-result');
+            healthResult.style.display = 'block';
+            
+            if (result.success) {
+                healthResult.className = 'api-response status-success';
+                healthResult.textContent = JSON.stringify(result.data, null, 2);
+                
+                // Update status indicators
+                document.getElementById('status-indicator').textContent = result.data.status;
+                document.getElementById('redis-status').textContent = result.data.services.redis;
+                document.getElementById('calendar-status').textContent = result.data.services.calendar;
+            } else {
+                healthResult.className = 'api-response status-error';
+                healthResult.textContent = `Error: ${result.error || 'Unknown error'}`;
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Check Health';
+        }
+
+        async function checkStatus() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Loading...';
+            
+            const result = await apiCall('/status');
+            
+            const statusResult = document.getElementById('status-result');
+            statusResult.style.display = 'block';
+            
+            if (result.success) {
+                statusResult.className = 'api-response status-info';
+                statusResult.textContent = JSON.stringify(result.data, null, 2);
+            } else {
+                statusResult.className = 'api-response status-error';
+                statusResult.textContent = `Error: ${result.error || 'Unknown error'}`;
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Get Status';
+        }
+
+        async function triggerScrape() {
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = 'Scraping...';
+            
+            const result = await apiCall('/scrape', 'POST');
+            
+            const scrapeResult = document.getElementById('scrape-result');
+            scrapeResult.style.display = 'block';
+            
+            if (result.success) {
+                scrapeResult.className = 'api-response status-success';
+                scrapeResult.textContent = JSON.stringify(result.data, null, 2);
+            } else {
+                scrapeResult.className = 'api-response status-error';
+                scrapeResult.textContent = `Error: ${result.error || 'Unknown error'}`;
+            }
+            
+            button.disabled = false;
+            button.textContent = 'Manually Trigger Scrape';
+        }
+
+        // Load initial health status on page load
+        window.onload = async function() {
+            // Try to get initial status
+            const result = await apiCall('/health');
+            if (result.success) {
+                document.getElementById('status-indicator').textContent = result.data.status;
+                document.getElementById('redis-status').textContent = result.data.services.redis;
+                document.getElementById('calendar-status').textContent = result.data.services.calendar;
+            }
+        };
+    </script>
+</body>
+</html>
