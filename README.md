@@ -70,7 +70,8 @@ This application:
 
 5. Set up Google Calendar API:
    - Follow the steps in the "Google Calendar Setup" section below
-   - Place the service account JSON file in `./credentials/service-account.json`
+   - Either place the service account JSON file in `./credentials/service-account.json` (for local development)
+   - Or set the `GOOGLE_CREDENTIALS_JSON` environment variable with the JSON content (for deployment on Zeabur)
 
 6. Create and configure environment variables:
    ```bash
@@ -100,6 +101,7 @@ The application uses environment variables for configuration. Copy `.env.example
 ```bash
 BUSKER_URL=<YOUR_BUSKER_PROFILE_URL>
 CALENDAR_ID=<YOUR_GOOGLE_CALENDAR_ID>
+# For local development only - for Zeabur deployment use GOOGLE_CREDENTIALS_JSON instead
 GOOGLE_CREDENTIALS_PATH=./credentials/service-account.json
 REDIS_HOST=localhost
 REDIS_PORT=6379
@@ -108,6 +110,8 @@ TIMEZONE=Asia/Singapore
 LOG_LEVEL=INFO
 EVENT_TTL_DAYS=90
 ```
+
+**Note**: For deployment on Zeabur, instead of using `GOOGLE_CREDENTIALS_PATH`, you can set the `GOOGLE_CREDENTIALS_JSON` environment variable with the full content of your service account JSON file. This allows you to keep your credentials secure without needing to mount a file.
 
 **Important**: The BUSKER_URL and CALENDAR_ID should be treated as sensitive information and kept private. Do not share these values publicly or commit them to version control.
 

@@ -19,15 +19,38 @@ class CalendarManager:
     def _authenticate(self):
         """Authenticate with Google Calendar API using service account."""
         try:
-            # Load service account credentials
-            credentials = Credentials.from_service_account_file(
-                Config.GOOGLE_CREDENTIALS_PATH,
-                scopes=['https://www.googleapis.com/auth/calendar']
-            )
+            import os
+            import json
+            
+            # Check if credentials are provided as environment variable
+            credentials_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+            
+            if credentials_json:
+                # Parse the JSON credentials from environment variable
+                try:
+                    credentials_info = json.loads(credentials_json)
+                    credentials = Credentials.from_service_account_info(
+                        credentials_info,
+                        scopes=['https://www.googleapis.com/auth/calendar']
+                    )
+                    self.logger.info("Successfully authenticated with Google Calendar API using environment variable")
+                except json.JSONDecodeError as e:
+                    self.logger.error(f"Failed to parse GOOGLE_CREDENTIALS_JSON environment variable: {e}")
+                    raise
+                except Exception as e:
+                    self.logger.error(f"Failed to create credentials from environment variable: {e}")
+                    raise
+            else:
+                # Load service account credentials from file
+                credentials = Credentials.from_service_account_file(
+                    Config.GOOGLE_CREDENTIALS_PATH,
+                    scopes=['https://www.googleapis.com/auth/calendar']
+                )
+                self.logger.info("Successfully authenticated with Google Calendar API using file")
             
             # Build the service object
             self.service = build('calendar', 'v3', credentials=credentials)
-            self.logger.info("Successfully authenticated with Google Calendar API")
+            
         except Exception as e:
             self.logger.error(f"Failed to authenticate with Google Calendar API: {e}")
             raise
