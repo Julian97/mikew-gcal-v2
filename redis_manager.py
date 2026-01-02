@@ -158,7 +158,7 @@ class RedisManager:
         """Increment a metric counter in Redis."""
         try:
             if date is None:
-                from .utils import get_current_singapore_time
+                from utils import get_current_singapore_time
                 date = get_current_singapore_time().strftime("%Y-%m-%d")
             
             metric_key = f"metrics:daily:{date}"
@@ -179,7 +179,7 @@ class RedisManager:
         """Get metrics for a specific date."""
         try:
             if date is None:
-                from .utils import get_current_singapore_time
+                from utils import get_current_singapore_time
                 date = get_current_singapore_time().strftime("%Y-%m-%d")
             
             metric_key = f"metrics:daily:{date}"
@@ -244,7 +244,7 @@ class RedisManager:
         try:
             # Since we use TTL, events should expire automatically
             # But we can still remove expired entries from the timeline
-            from .utils import get_current_singapore_time
+            from utils import get_current_singapore_time
             current_timestamp = int(get_current_singapore_time().timestamp())
             
             # Remove expired entries from timeline
@@ -260,7 +260,7 @@ class RedisManager:
     def get_recent_metrics(self) -> Dict[str, Any]:
         """Get recent metrics from Redis."""
         try:
-            from .utils import get_current_singapore_time
+            from utils import get_current_singapore_time
             current_date = get_current_singapore_time().strftime("%Y-%m-%d")
             
             metrics = self.get_metrics(current_date)

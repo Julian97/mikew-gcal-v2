@@ -16,8 +16,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
-RUN playwright install chromium
-RUN python -m playwright install-deps chromium
+RUN python -m playwright install chromium
+RUN python -m playwright install-deps
 
 # Verify Playwright installation
 RUN python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); browser = p.chromium.launch(); browser.close(); p.stop(); print('Playwright installation verified')"

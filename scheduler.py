@@ -180,7 +180,7 @@ class Scheduler:
             
             # Get all events from Redis
             # For this example, we'll get events for the next 90 days
-            from .utils import get_current_singapore_time
+            from utils import get_current_singapore_time
             current_date = get_current_singapore_time().strftime("%Y-%m-%d")
             
             # This is a simplified sync - in a real implementation, you might want to:
