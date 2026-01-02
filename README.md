@@ -136,6 +136,8 @@ The Dockerfile is already configured for Zeabur deployment:
    - Uses Playwright headless browser to scrape busker profile page
    - Extracts: date, start time, end time, location, busker name
    - Handles dynamic content loading and errors with retry logic
+   - Properly extracts busker name from profile image alt attribute
+   - Robust parsing for date/time/location from complex HTML structures
 
 2. **Redis Manager Module** (`redis_manager.py`)
    - Stores event hashes to detect duplicates
@@ -180,7 +182,7 @@ The application includes manual test scripts to verify functionality before depl
    ```bash
    python test_scraper_only.py
    ```
-   This tests just the web scraping functionality to ensure it can extract data from the busker profile page.
+   This tests just the web scraping functionality to ensure it can extract data from the busker profile page, including date, time, location, and busker name from dynamically loaded content.
 
 2. **Full Manual Test**:
    ```bash
@@ -235,6 +237,7 @@ For local testing without waiting for the scheduled time:
 2. **Google Calendar API Errors**: Verify service account permissions and JSON file
 3. **Redis Connection Issues**: Check Redis server status and connection parameters
 4. **Scraping Failures**: The target website structure may have changed
+5. **Dynamic Content Issues**: The website uses JavaScript to load content after the page loads, which requires proper wait strategies in the scraper
 
 ### Logging
 
