@@ -1,3 +1,7 @@
+import os
+# Set environment variable before importing Playwright
+os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/root/.cache/ms-playwright')
+
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 from bs4 import BeautifulSoup
 import re
