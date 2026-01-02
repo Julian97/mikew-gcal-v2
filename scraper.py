@@ -26,8 +26,17 @@ class BuskerScraper:
         
         def scrape_attempt():
             with sync_playwright() as p:
-                # Launch browser
-                browser = p.chromium.launch(headless=self.headless)
+                # Launch browser with specific executable path if available
+                try:
+                    # Try system chromium first
+                    browser = p.chromium.launch(headless=self.headless, executable_path="/usr/bin/chromium-browser")
+                except Exception:
+                    try:
+                        # Try another common location
+                        browser = p.chromium.launch(headless=self.headless, executable_path="/usr/bin/chromium")
+                    except Exception:
+                        # Fallback to Playwright's installed browser
+                        browser = p.chromium.launch(headless=self.headless)
                 page = browser.new_page()
                 
                 try:

@@ -25,9 +25,8 @@ RUN python -m playwright install-deps
 # Verify Playwright installation
 RUN python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); browser = p.chromium.launch(); browser.close(); p.stop(); print('Playwright installation verified')"
 
-# Additional check to ensure browser is available
-RUN ls -la /root/.cache/ms-playwright/
-RUN ls -la /root/.cache/ms-playwright/chromium-*/chrome-linux/ 2>/dev/null || echo 'Chrome directory not found'
+# Clean up to save disk space
+RUN playwright install --force-deps && rm -rf /root/.cache/ms-playwright/*/debugger/ /root/.cache/ms-playwright/*/swiftshader/
 
 # Copy application code
 COPY . .
