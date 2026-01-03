@@ -50,48 +50,37 @@ class BuskerScraper:
                 # First, let's try to find where Playwright actually installed the browser
                 import subprocess
                 
-                # Get Playwright browsers path
+                # First, try system-installed browsers which are more reliable in container environments
+                # This is more reliable since we install them in the Dockerfile
                 try:
-                    result = subprocess.run(['python', '-c', 
-                        'from playwright.sync_api import sync_playwright; '
-                        'p = sync_playwright().start(); '
-                        'print(p.chromium.executable_path); '
-                        'p.stop()'], 
-                        capture_output=True, text=True, timeout=10)
-                    if result.returncode == 0 and result.stdout.strip():
-                        executable_path = result.stdout.strip()
-                        self.logger.info(f"Found Playwright executable at: {executable_path}")
-                        browser = p.chromium.launch(
-                            headless=self.headless,
-                            executable_path=executable_path,
-                            args=[
-                                '--no-sandbox',
-                                '--disable-setuid-sandbox',
-                                '--disable-dev-shm-usage',
-                                '--disable-gpu',
-                                '--disable-extensions',
-                                '--disable-background-timer-throttling',
-                                '--disable-backgrounding-occluded-windows',
-                                '--disable-renderer-backgrounding',
-                                '--no-first-run',
-                                '--no-default-browser-check',
-                                '--disable-default-apps',
-                                '--disable-extensions',
-                                '--disable-plugins',
-                                '--disable-images',
-                                '--no-zygote'
-                            ]
-                        )
-                    else:
-                        raise Exception("Could not determine Playwright executable path")
-                except Exception as exec_path_error:
-                    self.logger.warning(f"Could not determine executable path: {exec_path_error}")
-                    
-                    # Fallback: Try system chromium first with additional args for container environments
+                    browser = p.chromium.launch(
+                        headless=self.headless,
+                        executable_path="/usr/bin/chromium-browser",
+                        args=[
+                            '--no-sandbox',
+                            '--disable-setuid-sandbox',
+                            '--disable-dev-shm-usage',
+                            '--disable-gpu',
+                            '--disable-extensions',
+                            '--disable-background-timer-throttling',
+                            '--disable-backgrounding-occluded-windows',
+                            '--disable-renderer-backgrounding',
+                            '--no-first-run',
+                            '--no-default-browser-check',
+                            '--disable-default-apps',
+                            '--disable-extensions',
+                            '--disable-plugins',
+                            '--disable-images',
+                            '--no-zygote'
+                        ]
+                    )
+                    self.logger.info("Successfully launched system chromium-browser")
+                except Exception:
                     try:
+                        # Try another common location with args
                         browser = p.chromium.launch(
                             headless=self.headless,
-                            executable_path="/usr/bin/chromium-browser",
+                            executable_path="/usr/bin/chromium",
                             args=[
                                 '--no-sandbox',
                                 '--disable-setuid-sandbox',
@@ -110,32 +99,47 @@ class BuskerScraper:
                                 '--no-zygote'
                             ]
                         )
+                        self.logger.info("Successfully launched system chromium")
                     except Exception:
+                        # If system browsers fail, try Playwright's installed browser
+                        # Get Playwright browsers path
                         try:
-                            # Try another common location with args
-                            browser = p.chromium.launch(
-                                headless=self.headless,
-                                executable_path="/usr/bin/chromium",
-                                args=[
-                                    '--no-sandbox',
-                                    '--disable-setuid-sandbox',
-                                    '--disable-dev-shm-usage',
-                                    '--disable-gpu',
-                                    '--disable-extensions',
-                                    '--disable-background-timer-throttling',
-                                    '--disable-backgrounding-occluded-windows',
-                                    '--disable-renderer-backgrounding',
-                                    '--no-first-run',
-                                    '--no-default-browser-check',
-                                    '--disable-default-apps',
-                                    '--disable-extensions',
-                                    '--disable-plugins',
-                                    '--disable-images',
-                                    '--no-zygote'
-                                ]
-                            )
-                        except Exception:
-                            # Fallback to Playwright's installed browser with args (without specifying path)
+                            result = subprocess.run(['python', '-c', 
+                                'from playwright.sync_api import sync_playwright; '
+                                'p = sync_playwright().start(); '
+                                'print(p.chromium.executable_path); '
+                                'p.stop()'], 
+                                capture_output=True, text=True, timeout=10)
+                            if result.returncode == 0 and result.stdout.strip():
+                                executable_path = result.stdout.strip()
+                                self.logger.info(f"Found Playwright executable at: {executable_path}")
+                                browser = p.chromium.launch(
+                                    headless=self.headless,
+                                    executable_path=executable_path,
+                                    args=[
+                                        '--no-sandbox',
+                                        '--disable-setuid-sandbox',
+                                        '--disable-dev-shm-usage',
+                                        '--disable-gpu',
+                                        '--disable-extensions',
+                                        '--disable-background-timer-throttling',
+                                        '--disable-backgrounding-occluded-windows',
+                                        '--disable-renderer-backgrounding',
+                                        '--no-first-run',
+                                        '--no-default-browser-check',
+                                        '--disable-default-apps',
+                                        '--disable-extensions',
+                                        '--disable-plugins',
+                                        '--disable-images',
+                                        '--no-zygote'
+                                    ]
+                                )
+                            else:
+                                raise Exception("Could not determine Playwright executable path")
+                        except Exception as exec_path_error:
+                            self.logger.warning(f"Could not determine executable path: {exec_path_error}")
+                            
+                            # Final fallback: Playwright's default launch without specifying path
                             browser = p.chromium.launch(
                                 headless=self.headless,
                                 args=[
