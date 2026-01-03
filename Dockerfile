@@ -63,8 +63,16 @@ RUN python -m playwright install-deps
 # Verify Playwright installation
 RUN python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); browser = p.chromium.launch(); browser.close(); p.stop(); print('Playwright installation verified')"
 
+# Additional Playwright setup for container environments
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright
+RUN python -m playwright install chromium --with-deps
+
 # Clean up to save disk space
-RUN playwright install --force-deps && rm -rf /root/.cache/ms-playwright/*/debugger/ /root/.cache/ms-playwright/*/swiftshader/
+RUN rm -rf /root/.cache/ms-playwright/*/debugger/ /root/.cache/ms-playwright/*/swiftshader/ 2>/dev/null || true
+
+# Copy Playwright browsers to expected location if needed
+RUN if [ -d /ms-playwright ]; then cp -r /ms-playwright/* /root/.cache/ms-playwright/ 2>/dev/null || true; fi
 
 # Copy application code
 COPY . .
