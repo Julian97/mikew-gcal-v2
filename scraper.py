@@ -2,8 +2,22 @@ import os
 # Set environment variable before importing Playwright
 os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/root/.cache/ms-playwright')
 
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+import os
+# Set environment variable before importing Playwright
+os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/root/.cache/ms-playwright')
+
+# Import Playwright as fallback
+try:
+    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    PLAYWRIGHT_AVAILABLE = False
+    PlaywrightTimeoutError = None
+    sync_playwright = None
+
 from bs4 import BeautifulSoup
+import requests
+from urllib.parse import urljoin
 import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
@@ -23,7 +37,17 @@ class BuskerScraper:
     def scrape_busker_schedule(self) -> List[Dict[str, Any]]:
         """Scrape the busker schedule from the website."""
         self.logger.info(f"Starting to scrape busker schedule from {self.url}")
-        
+            
+        # First try the alternative approach using requests
+        try:
+            events = self._scrape_with_requests()
+            if events:
+                self.logger.info(f"Successfully scraped {len(events)} events using requests approach")
+                return events
+        except Exception as e:
+            self.logger.warning(f"Requests-based scraping failed: {e}, falling back to Playwright")
+            
+        # If alternative approach fails, use Playwright
         def scrape_attempt():
             with sync_playwright() as p:
                 # Launch browser with specific executable path if available
@@ -38,56 +62,56 @@ class BuskerScraper:
                         # Fallback to Playwright's installed browser
                         browser = p.chromium.launch(headless=self.headless)
                 page = browser.new_page()
-                
+                    
                 try:
                     # Navigate to the page
                     page.goto(self.url, timeout=self.timeout)
                     self.logger.info("Page loaded successfully")
-                    
+                        
                     # Wait for the booking content to load (it's loaded dynamically)
                     try:
                         # Wait for the main booking container to load
                         page.wait_for_selector('#div-booking-result-view', timeout=30000)
                         self.logger.info("Booking result view loaded")
-                        
+                            
                         # Wait additional time for all booking items to populate
                         page.wait_for_timeout(20000)
-                        
+                            
                         # Verify booking items are loaded by checking for booking divs
                         booking_items = page.query_selector_all('[id^="div-booking-"]')
                         if booking_items:
                             self.logger.info(f"Found {len(booking_items)} booking items")
                         else:
                             self.logger.warning("No booking items found after waiting")
-                        
+                                
                         # Scroll to load all content
                         page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                         page.wait_for_timeout(5000)
-                        
+                            
                     except PlaywrightTimeoutError:
                         self.logger.warning("Booking content didn't load within timeout, continuing with available content")
-                    
+                        
                     # Get the page content after JavaScript execution
                     content = page.content()
-                    
+                        
                     # Close browser
                     browser.close()
-                    
+                        
                     # Parse the content with BeautifulSoup
                     soup = BeautifulSoup(content, 'html.parser')
-                    
+                        
                     # Extract the busker name from the page
                     busker_name = self._extract_busker_name(soup)
-                    
+                        
                     events = self._parse_schedule(soup)
-                    
+                        
                     # Update all events with the busker name
                     for event in events:
                         event['busker_name'] = busker_name
-                    
+                        
                     self.logger.info(f"Successfully scraped {len(events)} events")
                     return events
-                    
+                        
                 except PlaywrightTimeoutError:
                     browser.close()
                     self.logger.error(f"Timeout while scraping {self.url}")
@@ -96,13 +120,39 @@ class BuskerScraper:
                     browser.close()
                     self.logger.error(f"Error during scraping: {e}")
                     raise
-        
+            
         # Use retry logic for scraping
         try:
             return retry_with_backoff(scrape_attempt, max_retries=Config.MAX_RETRIES, delay=Config.RETRY_DELAY)
         except Exception as e:
             self.logger.error(f"Failed to scrape after {Config.MAX_RETRIES} attempts: {e}")
             raise
+        
+    def _scrape_with_requests(self) -> List[Dict[str, Any]]:
+        """Alternative scraping method using requests and BeautifulSoup."""
+        self.logger.info("Attempting to scrape using requests approach")
+            
+        # Try to get the page content directly
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        response = requests.get(self.url, headers=headers, timeout=30)
+        content = response.text
+            
+        # Parse the content with BeautifulSoup
+        soup = BeautifulSoup(content, 'html.parser')
+            
+        # Extract the busker name from the page
+        busker_name = self._extract_busker_name(soup)
+            
+        events = self._parse_schedule(soup)
+            
+        # Update all events with the busker name
+        for event in events:
+            event['busker_name'] = busker_name
+            
+        self.logger.info(f"Scraped {len(events)} events using requests approach")
+        return events
     
     def _parse_schedule(self, soup) -> List[Dict[str, Any]]:
         """Parse the schedule from the BeautifulSoup object."""
