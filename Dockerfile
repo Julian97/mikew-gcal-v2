@@ -54,19 +54,15 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Set environment for Playwright
-ENV PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN mkdir -p /ms-playwright
 
 # Install Playwright browsers
-RUN python -m playwright install chromium
+RUN PLAYWRIGHT_BROWSERS_PATH=/ms-playwright python -m playwright install chromium --with-deps
 RUN python -m playwright install-deps
 
 # Verify Playwright installation
-RUN python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); browser = p.chromium.launch(); browser.close(); p.stop(); print('Playwright installation verified')"
-
-# Additional Playwright setup for container environments
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN mkdir -p /ms-playwright
-RUN PLAYWRIGHT_BROWSERS_PATH=/ms-playwright python -m playwright install chromium --with-deps
+RUN PLAYWRIGHT_BROWSERS_PATH=/ms-playwright python -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); browser = p.chromium.launch(); browser.close(); p.stop(); print('Playwright installation verified')"
 
 # Clean up to save disk space
 RUN rm -rf /root/.cache/ms-playwright/*/debugger/ /root/.cache/ms-playwright/*/swiftshader/ 2>/dev/null || true

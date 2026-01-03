@@ -1,10 +1,6 @@
 import os
 # Set environment variable before importing Playwright
-os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/root/.cache/ms-playwright')
-
-import os
-# Set environment variable before importing Playwright
-os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/root/.cache/ms-playwright')
+os.environ.setdefault('PLAYWRIGHT_BROWSERS_PATH', '/ms-playwright')
 
 # Import Playwright as fallback
 try:
