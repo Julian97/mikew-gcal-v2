@@ -52,15 +52,74 @@ class BuskerScraper:
             with sync_playwright() as p:
                 # Launch browser with specific executable path if available
                 try:
-                    # Try system chromium first
-                    browser = p.chromium.launch(headless=self.headless, executable_path="/usr/bin/chromium-browser")
+                    # Try system chromium first with additional args for container environments
+                    browser = p.chromium.launch(
+                        headless=self.headless,
+                        executable_path="/usr/bin/chromium-browser",
+                        args=[
+                            '--no-sandbox',
+                            '--disable-setuid-sandbox',
+                            '--disable-dev-shm-usage',
+                            '--disable-gpu',
+                            '--disable-extensions',
+                            '--disable-background-timer-throttling',
+                            '--disable-backgrounding-occluded-windows',
+                            '--disable-renderer-backgrounding',
+                            '--no-first-run',
+                            '--no-default-browser-check',
+                            '--disable-default-apps',
+                            '--disable-extensions',
+                            '--disable-plugins',
+                            '--disable-images',
+                            '--no-zygote'
+                        ]
+                    )
                 except Exception:
                     try:
-                        # Try another common location
-                        browser = p.chromium.launch(headless=self.headless, executable_path="/usr/bin/chromium")
+                        # Try another common location with args
+                        browser = p.chromium.launch(
+                            headless=self.headless,
+                            executable_path="/usr/bin/chromium",
+                            args=[
+                                '--no-sandbox',
+                                '--disable-setuid-sandbox',
+                                '--disable-dev-shm-usage',
+                                '--disable-gpu',
+                                '--disable-extensions',
+                                '--disable-background-timer-throttling',
+                                '--disable-backgrounding-occluded-windows',
+                                '--disable-renderer-backgrounding',
+                                '--no-first-run',
+                                '--no-default-browser-check',
+                                '--disable-default-apps',
+                                '--disable-extensions',
+                                '--disable-plugins',
+                                '--disable-images',
+                                '--no-zygote'
+                            ]
+                        )
                     except Exception:
-                        # Fallback to Playwright's installed browser
-                        browser = p.chromium.launch(headless=self.headless)
+                        # Fallback to Playwright's installed browser with args
+                        browser = p.chromium.launch(
+                            headless=self.headless,
+                            args=[
+                                '--no-sandbox',
+                                '--disable-setuid-sandbox',
+                                '--disable-dev-shm-usage',
+                                '--disable-gpu',
+                                '--disable-extensions',
+                                '--disable-background-timer-throttling',
+                                '--disable-backgrounding-occluded-windows',
+                                '--disable-renderer-backgrounding',
+                                '--no-first-run',
+                                '--no-default-browser-check',
+                                '--disable-default-apps',
+                                '--disable-extensions',
+                                '--disable-plugins',
+                                '--disable-images',
+                                '--no-zygote'
+                            ]
+                        )
                 page = browser.new_page()
                     
                 try:
