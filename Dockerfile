@@ -75,6 +75,10 @@ RUN which chromium-browser || echo "chromium-browser not found"
 RUN which chromium || echo "chromium not found"
 RUN ls -la /usr/bin/chromium* || echo "No chromium binaries found"
 
+# Create a symlink to make sure chromium is accessible at common locations
+RUN which chromium-browser 2>/dev/null && ln -sf /usr/bin/chromium-browser /usr/bin/chromium 2>/dev/null || echo "chromium-browser not found, trying chromium"
+RUN which chromium 2>/dev/null && ln -sf /usr/bin/chromium /usr/bin/chromium-browser 2>/dev/null || echo "chromium not found"
+
 # Copy application code
 COPY . .
 
