@@ -52,6 +52,7 @@ class BuskerScraper:
                 
                 # First, try system-installed browsers which are more reliable in container environments
                 # This is more reliable since we install them in the Dockerfile
+                self.logger.info("Attempting to launch system chromium-browser at /usr/bin/chromium-browser")
                 try:
                     browser = p.chromium.launch(
                         headless=self.headless,
@@ -75,9 +76,11 @@ class BuskerScraper:
                         ]
                     )
                     self.logger.info("Successfully launched system chromium-browser")
-                except Exception:
+                except Exception as e:
+                    self.logger.warning(f"Failed to launch system chromium-browser: {e}")
                     try:
                         # Try another common location with args
+                        self.logger.info("Attempting to launch system chromium at /usr/bin/chromium")
                         browser = p.chromium.launch(
                             headless=self.headless,
                             executable_path="/usr/bin/chromium",
@@ -100,7 +103,8 @@ class BuskerScraper:
                             ]
                         )
                         self.logger.info("Successfully launched system chromium")
-                    except Exception:
+                    except Exception as e2:
+                        self.logger.warning(f"Failed to launch system chromium: {e2}")
                         # If system browsers fail, try Playwright's installed browser
                         # Get Playwright browsers path
                         try:

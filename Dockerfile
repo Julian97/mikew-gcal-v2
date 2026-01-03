@@ -70,6 +70,11 @@ RUN rm -rf /root/.cache/ms-playwright/*/debugger/ /root/.cache/ms-playwright/*/s
 # Copy Playwright browsers to expected location if needed
 RUN if [ -d /ms-playwright ]; then cp -r /ms-playwright/* /root/.cache/ms-playwright/ 2>/dev/null || true; fi
 
+# Verify system browsers are installed
+RUN which chromium-browser || echo "chromium-browser not found"
+RUN which chromium || echo "chromium not found"
+RUN ls -la /usr/bin/chromium* || echo "No chromium binaries found"
+
 # Copy application code
 COPY . .
 
