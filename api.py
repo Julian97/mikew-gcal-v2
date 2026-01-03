@@ -137,9 +137,13 @@ def manual_scrape():
         
     except Exception as e:
         logger.error(f"Manual scrape failed: {e}")
+        # Return a proper error response even if the scraping fails
+        error_message = str(e)
+        if 'Executable doesn\'t exist' in error_message:
+            error_message = "Browser executable not found. Playwright browsers may not be properly installed in the deployment environment."
         return jsonify({
             'status': 'error',
-            'message': f'Manual scrape failed: {str(e)}',
+            'message': f'Manual scrape failed: {error_message}',
             'timestamp': datetime.now().isoformat()
         }), 500
 

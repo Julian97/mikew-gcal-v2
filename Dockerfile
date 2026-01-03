@@ -66,7 +66,7 @@ RUN python -c "from playwright.sync_api import sync_playwright; p = sync_playwri
 # Additional Playwright setup for container environments
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir -p /ms-playwright
-RUN python -m playwright install chromium --with-deps
+RUN PLAYWRIGHT_BROWSERS_PATH=/ms-playwright python -m playwright install chromium --with-deps
 
 # Clean up to save disk space
 RUN rm -rf /root/.cache/ms-playwright/*/debugger/ /root/.cache/ms-playwright/*/swiftshader/ 2>/dev/null || true

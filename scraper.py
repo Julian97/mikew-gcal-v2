@@ -176,7 +176,11 @@ class BuskerScraper:
                     self.logger.error(f"Timeout while scraping {self.url}")
                     raise
                 except Exception as e:
-                    browser.close()
+                    # Ensure browser is closed even if an exception occurs
+                    try:
+                        browser.close()
+                    except:
+                        pass  # Ignore errors when closing browser
                     self.logger.error(f"Error during scraping: {e}")
                     raise
             
