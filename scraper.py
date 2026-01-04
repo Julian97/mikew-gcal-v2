@@ -105,46 +105,29 @@ class BuskerScraper:
                         self.logger.info("Successfully launched system chromium")
                     except Exception as e2:
                         self.logger.warning(f"Failed to launch system chromium: {e2}")
-                        # If system browsers fail, try Playwright's default launch without specifying executable path
-                        # Temporarily override the environment variable to allow Playwright to find the browser
-                        import os
-                        original_browsers_path = os.environ.get('PLAYWRIGHT_BROWSERS_PATH')
-                        
-                        # Temporarily unset the PLAYWRIGHT_BROWSERS_PATH to let Playwright auto-detect
-                        if 'PLAYWRIGHT_BROWSERS_PATH' in os.environ:
-                            del os.environ['PLAYWRIGHT_BROWSERS_PATH']
-                        
-                        try:
-                            self.logger.info("Attempting Playwright default launch without specifying executable path")
-                            browser = p.chromium.launch(
-                                headless=self.headless,
-                                args=[
-                                    '--no-sandbox',
-                                    '--disable-setuid-sandbox',
-                                    '--disable-dev-shm-usage',
-                                    '--disable-gpu',
-                                    '--disable-extensions',
-                                    '--disable-background-timer-throttling',
-                                    '--disable-backgrounding-occluded-windows',
-                                    '--disable-renderer-backgrounding',
-                                    '--no-first-run',
-                                    '--no-default-browser-check',
-                                    '--disable-default-apps',
-                                    '--disable-extensions',
-                                    '--disable-plugins',
-                                    '--disable-images',
-                                    '--no-zygote'
-                                ]
-                            )
-                            self.logger.info("Successfully launched browser using Playwright default")
-                        finally:
-                            # Restore the original environment variable
-                            if original_browsers_path is not None:
-                                os.environ['PLAYWRIGHT_BROWSERS_PATH'] = original_browsers_path
-                            elif 'PLAYWRIGHT_BROWSERS_PATH' in os.environ:
-                                del os.environ['PLAYWRIGHT_BROWSERS_PATH']
-                            # Set it back to our expected path
-                            os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '/ms-playwright'
+                        # If system browsers fail, try Playwright's default launch with proper path configuration
+                        self.logger.info("Attempting Playwright launch with direct browser path")
+                        browser = p.chromium.launch(
+                            headless=self.headless,
+                            args=[
+                                '--no-sandbox',
+                                '--disable-setuid-sandbox',
+                                '--disable-dev-shm-usage',
+                                '--disable-gpu',
+                                '--disable-extensions',
+                                '--disable-background-timer-throttling',
+                                '--disable-backgrounding-occluded-windows',
+                                '--disable-renderer-backgrounding',
+                                '--no-first-run',
+                                '--no-default-browser-check',
+                                '--disable-default-apps',
+                                '--disable-extensions',
+                                '--disable-plugins',
+                                '--disable-images',
+                                '--no-zygote'
+                            ]
+                        )
+                        self.logger.info("Successfully launched browser using Playwright")
                 page = browser.new_page()
                     
                 try:

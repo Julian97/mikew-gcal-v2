@@ -28,7 +28,11 @@ class CalendarManager:
             if credentials_json:
                 # Parse the JSON credentials from environment variable
                 try:
-                    credentials_info = json.loads(credentials_json)
+                    # Clean up the JSON string to handle potential formatting issues
+                    import re
+                    # Remove any potential carriage returns or extra whitespace
+                    cleaned_json = credentials_json.strip().replace('\r\n', '\n').replace('\r', '\n')
+                    credentials_info = json.loads(cleaned_json)
                     credentials = Credentials.from_service_account_info(
                         credentials_info,
                         scopes=['https://www.googleapis.com/auth/calendar']
@@ -36,6 +40,8 @@ class CalendarManager:
                     self.logger.info("Successfully authenticated with Google Calendar API using environment variable")
                 except json.JSONDecodeError as e:
                     self.logger.error(f"Failed to parse GOOGLE_CREDENTIALS_JSON environment variable: {e}")
+                    # Print the first few characters to help debug
+                    self.logger.error(f"First 100 chars of credentials_json: {repr(credentials_json[:100])}")
                     raise
                 except Exception as e:
                     self.logger.error(f"Failed to create credentials from environment variable: {e}")
